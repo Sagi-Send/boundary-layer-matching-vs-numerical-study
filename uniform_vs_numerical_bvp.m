@@ -1,113 +1,117 @@
-function compare_uniform_vs_numerical
-%COMPARE_UNIFORM_VS_NUMERICAL  Asymptotic solution vs.
-%                              direct numerical BVP solution.
+function compare_asymptotic_vs_numerical
+%COMPARE_ASYMPTOTIC_VS_NUMERICAL_  Convergence test for a matched solution.
 %
-%   PROBLEM
+%   PURPOSE
 %   -------
-%   We study the singularly-perturbed boundary-layer ODE
+%   Validate a **matched asymptotic approximation** y_uniform(x; ε) obtained
+%   via boundary‐layer theory by showing that its L₁-distance to the direct
+%   numerical solution of the BVP decays algebraically as ε → 0.
 %
-%       ε y''(x) + (1/x) y'(x) + y(x) = 0,  x ∈ [ε, 1],
-%       y(ε) = 0, y(1) = exp(−1/2).
-%
-%   A composite uniform approximation y_uniform(x) is obtained via
-%   Asymptotic expansions (outer + inner layer, then matched).
-%   This script compares that analytic approximation with the numerical
-%   solution produced by `bvp4c`.
-%
-%   WORKFLOW
-%   --------
-%   • For every value in EPSILON_VEC
-%       1. Evaluate the composite uniform approximation.
-%       2. Solve the BVP numerically with first-order reduction + `bvp4c`.
-%       3. Compute the L₁-error on [ε, 1].
-%       4. Plot both curves on the same axes.
-%   • Fit the convergence rate log(L₁) ≈ C ε^p and show it on a log–log
-%     plot.
-%   • Save both figures (PNG) to the folder `./fig/`.
-%
-%   FILES WRITTEN
+%   MODEL PROBLEM
 %   -------------
-%   fig/solutions_vs_numerical.png   – uniform vs. numerical curves
-%   fig/L1_error_loglog.png          – L₁-error convergence
+%       ε y'''(x) − y'(x) + x y(x) = 0,  x ∈ [0, 1],
+%       y(0) = 1, y'(0) = 1, y(1) = 1.
+%
+%   The script:
+%     1) Evaluates the matched asymptotic formula y_uniform(x; ε).
+%     2) Solves the full BVP with `bvp4c` for several ε values.
+%     3) Computes   L₁(ε) = ∫₀¹ |y_uniform − y_num| dx.
+%     4) Plots both curves for visual comparison.
+%     5) Fits   log L₁ ≈ p log ε + C   to expose the observed convergence
+%        rate p.
+%
+%   EXPECTED RESULT
+%   ---------------
+%   On a log–log plot, L₁(ε) should decrease with slope p < 0,
+%   confirming that the asymptotic matching captures the correct interior
+%   and boundary‐layer behaviour as ε becomes small.
 %
 %   AUTHOR  : Sagi Senderovich
 %   VERSION : 22-Jun-2025
 % -------------------------------------------------------------------------
 
-clc;  close all;
+clc; close all;
 
-%% --------------------------- user parameters --------------------------
-epsilon_vec = [1e-1, 1e-2, 1e-3, 1e-4];
-x_common    = linspace(min(epsilon_vec), 1, 1000);
-save_folder = fullfile(pwd,'fig');           % ./fig   (auto-created)
-if ~exist(save_folder,"dir"), mkdir(save_folder); end
+%% --------------------------- user parameters ---------------------------
+EPSILON_VEC = [1e-3, 1e-4, 1e-6, 1e-8, 1e-10];
+X_GRID      = linspace(0, 1, 1000);        % common evaluation grid
 
-n_cases   = numel(epsilon_vec);
+% output folder
+fig_dir = fullfile(pwd,'fig');
+if ~exist(fig_dir,'dir'), mkdir(fig_dir); end
+% ------------------------------------------------------------------------
+
+n_cases   = numel(EPSILON_VEC);
 color_map = lines(n_cases);
-L1_error  = zeros(n_cases,1);
+L1_error  = zeros(n_cases, 1);
 
-% Figure 1
-fig1 = figure('Name','Asymptotic vs. Numerical Solutions');
+%% ----------------------- figure 1: solutions ----------------------------
+fig1 = figure('Name', 'Asymptotic vs. Numerical');
+ylim([1 1.7])
 hold on;
 
 for k = 1:n_cases
-    epsilon = epsilon_vec(k);
+    eps = EPSILON_VEC(k);
 
-    % matching approximation
-    asymp_fun = @(x) exp(-x.^2/2) - exp(-(x - epsilon)./epsilon.^2);
-    x_asymp   = linspace(epsilon,1,1000);
-    y_asymp   = asymp_fun(x_asymp);
+    % asymptotic (asymptotic) approximation  y_uniform(x; ε)
+    uniform_fun = @(x) ...
+        ((sqrt(eps) + 1) .* exp(x.^2 / 2) ...
+        - sqrt(eps) .* exp(-x ./ sqrt(eps)) ...
+        + (1 - sqrt(exp(1)) .* (sqrt(eps) + 1)) ...
+          .* exp((x - 1) ./ sqrt(eps)));
 
-    % numerical BVP
-    ode = @(x,Y)[ Y(2) ;
-                 -(1./(x*epsilon)).*Y(2) - (1/epsilon).*Y(1) ];
-    bc  = @(Ya,Yb)[ Ya(1) ;
-                    Yb(1)-exp(-1/2) ];
-    guess = @(x)[ ((x-epsilon)/(1-epsilon))*exp(-1/2) ;
-                  exp(-1/2)/(1-epsilon) ];
-    sol   = bvp4c(ode,bc,bvpinit(linspace(epsilon,1,400),guess));
+    y_uniform = uniform_fun(X_GRID);
 
-    % safe evaluation on [epsilon,1]
-    valid_idx      = x_common >= epsilon;
-    y_num_full     = NaN(1,numel(x_common));
-    y_temp         = deval(sol,x_common(valid_idx));
-    y_num_full(valid_idx) = y_temp(1,:);
-    y_num = y_num_full;
+    % numerical BVP  (first-order system)
+    %   Y(1) = y ,  Y(2) = y' ,  Y(3) = y''
+    ode = @(x, Y)[ Y(2) ; ...
+                   Y(3) ; ...
+                   (Y(2) - x .* Y(1)) / eps ];
 
-    % L1 error
-    L1_error(k) = trapz(x_common(valid_idx), ...
-                        abs(asymp_fun(x_common(valid_idx))-y_num(valid_idx)));
+    bc  = @(Ya, Yb)[ Ya(1) - 1 ;   % y(0)  = 1
+                     Ya(2) - 1 ;   % y'(0) = 1
+                     Yb(1) - 1 ];  % y(1)  = 1
+
+    init_guess = @(x)[ 1 ; 1 ; 0 ];                 % coarse initial guess
+    sol        = bvp4c(ode, bc, bvpinit(X_GRID, init_guess));
+    y_num      = deval(sol, X_GRID);
+
+    % L₁-error
+    L1_error(k) = trapz(X_GRID, abs(y_uniform - y_num(1 , :)));
 
     % plotting
-    plot(x_asymp,y_asymp,'-','LineWidth',1.4,'Color',color_map(k,:), ...
-        'DisplayName',sprintf('Uniform \\epsilon = %.0e',epsilon));
-    plot(x_common(valid_idx),y_num(valid_idx),'--','LineWidth',1.4, ...
+    plot(X_GRID, y_uniform, '-',  'LineWidth',1.4, ...
         'Color',color_map(k,:), ...
-        'DisplayName',sprintf('Numerical \\epsilon = %.0e',epsilon));
+        'DisplayName',sprintf('Asymptotic \\epsilon = %.0e', eps));
+
+    plot(X_GRID, y_num(1 , :), '--', 'LineWidth',1.4, ...
+        'Color',color_map(k,:), ...
+        'DisplayName',sprintf('Numerical \\epsilon = %.0e', eps));
 end
 
 xlabel('x'); ylabel('y(x)');
-title({'Boundary-Layer Solutions';'(asymptotic vs. numerical BVP)'});
-legend('Location','best'); grid on; box on;
+title({'Boundary-Layer Solutions'; '(asymptotic vs. numerical BVP)'});
+legend('Location','best'); grid off; box off;
 
-% save figure 1
-saveas(fig1, fullfile(save_folder,'solutions_vs_numerical.png'));
+saveas(fig1, fullfile(fig_dir,'solutions_vs_numerical.png'));
 
-% Figure 2
-fig2 = figure('Name','L1 error (log-log)');
-loglog(epsilon_vec,L1_error,'o-','LineWidth',1.5); grid on;
-xlabel('\epsilon'); ylabel('L_1 error');
-title('Convergence of Asymptotic Solution Towards Numerical BVP');
 
-% fit slope
-coeff = polyfit(log(epsilon_vec(:)), log(L1_error(:)),1);
-rate  = coeff(1); intercept = coeff(2);
-text('Units','normalized','Position',[0.72 0.25], ...
-     'String',sprintf('L_1 \\approx %.2f \\epsilon^{%.2f}',exp(intercept),rate), ...
-     'BackgroundColor','w','EdgeColor','k');
+%% ------------------- figure 2: L1 error convergence ---------------------
+fig2 = figure('Name','L1 error (log‒log)');
+loglog(EPSILON_VEC, L1_error, 'o-', 'LineWidth',1.5);
+xlim([0 0.001]);
+grid off; box off; xlabel('\epsilon'); ylabel('L_1 error');
+title('Convergence of Asymptotic Solution');
 
-fprintf('Observed fit:  log(L1) = %.2f·log(epsilon) + %.2f\n',rate,intercept);
+% fit slope  log(L1) = p log ε + C
+coeff = polyfit(log(EPSILON_VEC(:)), log(L1_error(:)), 1);
+rate  = coeff(1);  intercept = coeff(2);
 
-% save figure 2
-saveas(fig2, fullfile(save_folder,'L1_error_loglog.png'));
+text('Units','normalized', 'Position',[0.55 0.25], ...
+     'String',sprintf('L_1 \\approx %.2f \\epsilon^{%.2f}', ...
+                      exp(intercept), rate), ...
+     'BackgroundColor','w', 'EdgeColor','k');
+
+fprintf('Observed fit:  log(L1) = %.2f·log(ε) + %.2f\n', rate, intercept);
+saveas(fig2, fullfile(fig_dir,'L1_error_loglog.png'));
 end

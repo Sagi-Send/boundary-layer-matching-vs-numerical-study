@@ -1,3 +1,12 @@
+# Boundary-Layer — Matched Approximation vs. Numerical BVP
+
+<p align="center">
+  <img src="fig/solutions_vs_numerical.png" width="48%">
+  <img src="fig/L1_error_loglog.png" width="48%">
+</p>
+
+---
+
 # Boundary-Layer — Matching Approximation vs. Numerical Solution
 
 This mini-repo demonstrates how a **matched-asymptotic (composite) uniform
@@ -15,11 +24,11 @@ solution of the underlying singularly-perturbed ODE.
 
 We consider  
 
-ε y''(x) + (1/x) y'(x) + y(x) = 0      on  [ε, 1]
-y(ε) = 0, y(1) = exp(-1/2)
+ε y‴(x) − y′(x) + x y(x) = 0  x ∈ [0, 1]
+y(0) = 1, y′(0) = 1, y(1) = 1
 
 where 0<ε<<1 creates a thin boundary layer near
-x=ε.
+x=1.
 
 * **Uniform approximation**  
   Built with matching:  
