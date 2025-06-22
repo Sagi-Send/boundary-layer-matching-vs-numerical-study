@@ -1,5 +1,5 @@
 function compare_uniform_vs_numerical
-%COMPARE_UNIFORM_VS_NUMERICAL  Asymptotic solution vs.
+%COMPARE_UNIFORM_VS_NUMERICAL  Matched-asymptotic solution vs.
 %                              direct numerical BVP solution.
 %
 %   PROBLEM
@@ -10,7 +10,7 @@ function compare_uniform_vs_numerical
 %       y(ε) = 0, y(1) = exp(−1/2).
 %
 %   A composite uniform approximation y_uniform(x) is obtained via
-%   Asymptotic expansions (outer + inner layer, then matched).
+%   matched-asymptotic expansions (outer + inner layer, then matched).
 %   This script compares that analytic approximation with the numerical
 %   solution produced by `bvp4c`.
 %
@@ -41,22 +41,23 @@ epsilon_vec = [1e-1, 1e-2, 1e-3, 1e-4];
 x_common    = linspace(min(epsilon_vec), 1, 1000);
 save_folder = fullfile(pwd,'fig');           % ./fig   (auto-created)
 if ~exist(save_folder,"dir"), mkdir(save_folder); end
+% -----------------------------------------------------------------------
 
 n_cases   = numel(epsilon_vec);
 color_map = lines(n_cases);
 L1_error  = zeros(n_cases,1);
 
-% Figure 1
-fig1 = figure('Name','Asymptotic vs. Numerical Solutions');
+% Figure 1 ---------------------------------
+fig1 = figure('Name','Matched-Asymptotic vs. Numerical Solutions');
 hold on;
 
 for k = 1:n_cases
     epsilon = epsilon_vec(k);
 
     % matching approximation
-    asymp_fun = @(x) exp(-x.^2/2) - exp(-(x - epsilon)./epsilon.^2);
-    x_asymp   = linspace(epsilon,1,1000);
-    y_asymp   = asymp_fun(x_asymp);
+    legacy_fun = @(x) exp(-x.^2/2) - exp(-(x - epsilon)./epsilon.^2);
+    x_legacy   = linspace(epsilon,1,1000);
+    y_legacy   = legacy_fun(x_legacy);
 
     % numerical BVP
     ode = @(x,Y)[ Y(2) ;
@@ -76,28 +77,28 @@ for k = 1:n_cases
 
     % L1 error
     L1_error(k) = trapz(x_common(valid_idx), ...
-                        abs(asymp_fun(x_common(valid_idx))-y_num(valid_idx)));
+                        abs(legacy_fun(x_common(valid_idx))-y_num(valid_idx)));
 
     % plotting
-    plot(x_asymp,y_asymp,'-','LineWidth',1.4,'Color',color_map(k,:), ...
-        'DisplayName',sprintf('Uniform \\epsilon = %.0e',epsilon));
+    plot(x_legacy,y_legacy,'-','LineWidth',1.4,'Color',color_map(k,:), ...
+        'DisplayName',sprintf(' \\epsilon = %.0e',epsilon));
     plot(x_common(valid_idx),y_num(valid_idx),'--','LineWidth',1.4, ...
         'Color',color_map(k,:), ...
         'DisplayName',sprintf('Numerical \\epsilon = %.0e',epsilon));
 end
 
 xlabel('x'); ylabel('y(x)');
-title({'Boundary-Layer Solutions';'(asymptotic vs. numerical BVP)'});
+title({'Transition-layer solutions';'(matched-asymptotic vs. numerical BVP)'});
 legend('Location','best'); grid on; box on;
 
 % save figure 1
 saveas(fig1, fullfile(save_folder,'solutions_vs_numerical.png'));
 
-% Figure 2
+% ---------------------------- Figure 2 ---------------------------------
 fig2 = figure('Name','L1 error (log-log)');
 loglog(epsilon_vec,L1_error,'o-','LineWidth',1.5); grid on;
 xlabel('\epsilon'); ylabel('L_1 error');
-title('Convergence of Asymptotic Solution Towards Numerical BVP');
+title('Convergence of Matched-Asymptotic Solution Towards Numerical BVP');
 
 % fit slope
 coeff = polyfit(log(epsilon_vec(:)), log(L1_error(:)),1);
