@@ -6,20 +6,20 @@ solution of the underlying singularly-perturbed ODE.
 
 ---
 
+<p align="center">
+  <img src="fig/solutions_vs_numerical.png" alt="Uniform vs numerical solutions" width="48%">
+  <img src="fig/L1_error_loglog.png" alt="L1-error convergence" width="48%">
+</p>
+
 ## Problem statement
 
 We consider  
 
-\[
-\varepsilon\,y''(x)+\frac{1}{x}\,y'(x)+y(x)=0,
-\qquad
-x\in[\varepsilon,1],\qquad
-y(\varepsilon)=0,\;
-y(1)=e^{-1/2},
-\]
+ε y''(x) + (1/x) y'(x) + y(x) = 0      on  [ε, 1]
+y(ε) = 0, y(1) = exp(-1/2)
 
-where \(0<\varepsilon\ll1\) creates a thin boundary layer near
-\(x=\varepsilon\).
+where 0<ε<<1 creates a thin boundary layer near
+x=ε.
 
 * **Uniform approximation**  
   Built with matched-asymptotic expansions:  
