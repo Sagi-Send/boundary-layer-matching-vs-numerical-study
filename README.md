@@ -1,4 +1,4 @@
-# Boundary-Layer BVP — Uniform Approximation vs. Numerical Solution
+# Boundary-Layer — Matching Approximation vs. Numerical Solution
 
 This mini-repo demonstrates how a **matched-asymptotic (composite) uniform
 approximation** to a boundary layer compares with a fully numerical
@@ -22,7 +22,7 @@ where 0<ε<<1 creates a thin boundary layer near
 x=ε.
 
 * **Uniform approximation**  
-  Built with matched-asymptotic expansions:  
+  Built with matching:  
   outer solution + inner layer → matched and combined.
 
 * **Numerical reference**  
