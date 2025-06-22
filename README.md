@@ -1,12 +1,3 @@
-# Boundary-Layer — Matched Approximation vs. Numerical BVP
-
-<p align="center">
-  <img src="fig/solutions_vs_numerical.png" width="48%">
-  <img src="fig/L1_error_loglog.png" width="48%">
-</p>
-
----
-
 # Boundary-Layer — Matching Approximation vs. Numerical Solution
 
 This mini-repo demonstrates how a **matched-asymptotic (composite) uniform
