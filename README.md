@@ -1,7 +1,6 @@
 # Boundary-Layer — Matching Approximation vs. Numerical Solution
 
-This mini-repo demonstrates how a **matched-asymptotic (composite) uniform
-approximation** to a boundary layer compares with a fully numerical
+This mini-repo studies the first-order convergence of a boundary layer's **matched-asymptotic approximation** towards a fully numerical
 solution of the underlying singularly-perturbed ODE.
 
 ---
@@ -28,8 +27,8 @@ x=1.
 * **Numerical reference**  
   Reformulated as a first-order system and solved with MATLAB `bvp4c`.
 
-We sweep several values of ε and track the **L₁-error** between the two
-solutions.
+To test convergence of the asymptotic approximation, we sweep several values of ε and track the **L₁-error** between the two
+solutions. Results show a first-order logarithmic convergence.
 
 ---
 
